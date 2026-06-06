@@ -8,9 +8,10 @@ interface AICoachProps {
   t: any;
   lang: "fr" | "en";
   userProfile: UserProfile;
+  setCurrentTab?: (tab: string) => void;
 }
 
-export default function AICoach({ t, lang, userProfile }: AICoachProps) {
+export default function AICoach({ t, lang, userProfile, setCurrentTab }: AICoachProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome-coach",
@@ -24,6 +25,8 @@ export default function AICoach({ t, lang, userProfile }: AICoachProps) {
   const [inputText, setInputText] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const isProfileEmpty = !userProfile.skills || userProfile.skills.length === 0;
 
   // Sync historical messages from Firestore users/{userId}/chatHistory
   useEffect(() => {
@@ -166,85 +169,114 @@ export default function AICoach({ t, lang, userProfile }: AICoachProps) {
         </div>
       </div>
 
-      {/* 2. Dialogue window wrapper */}
-      <div className="flex-1 overflow-y-auto border border-slate-100 dark:border-slate-800/80 rounded-2xl bg-white dark:bg-[#1E293B]/20 p-4 sm:p-6 mb-4 space-y-4 shadow-sm">
-        {messages.map((m) => {
-          const isUser = m.sender === "user";
-          return (
-            <div key={m.id} className={`flex items-start space-x-3.5 max-w-[85%] ${isUser ? "ml-auto flex-row-reverse space-x-reverse" : "mr-auto"}`}>
-              {/* Badge avatar indicator */}
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border ${
-                isUser 
-                  ? "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300" 
-                  : "bg-[#2563EB]/10 border-blue-500/20 text-[#2563EB]"
-              }`}>
-                {isUser ? <User className="w-4 h-4" /> : <Brain className="w-4 h-4" />}
-              </div>
+      {isProfileEmpty ? (
+        /* LOCKED PROFILE EMPTY REDIRECTION */
+        <div className="text-center py-16 px-6 bg-white dark:bg-[#1E293B] border border-slate-100 dark:border-slate-800/80 rounded-2xl shadow-sm max-w-2xl mx-auto space-y-6 my-auto">
+          <div className="w-14 h-14 bg-amber-500/10 text-amber-500 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+            <MessageSquare className="w-7 h-7 stroke-[1.5]" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white font-display">
+              {lang === "fr" ? "Profil vide détecté dans la base" : "Profile Empty in Database"}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+              {lang === "fr"
+                ? "Pour éviter les hallucinations de l'IA, le Coach SkillOn requiert la saisie préalable de vos compétences et projets sur votre profil avant de converser."
+                : "To prevent AI hallucinations, the SkillOn Coach demands your profile credentials and projects be filled in before initiating dialogues."}
+            </p>
+          </div>
+          <button
+            id="go-profile-coach"
+            onClick={() => setCurrentTab?.("profile")}
+            className="px-6 py-3 bg-[#2563EB] hover:bg-blue-700 text-white font-bold text-sm rounded-lg shadow-md transition-colors cursor-pointer flex items-center justify-center space-x-2.5 mx-auto"
+          >
+            <ArrowRight className="w-4 h-4" />
+            <span>{lang === "fr" ? "Compléter mon Profil" : "Go to Profile"}</span>
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* 2. Dialogue window wrapper */}
+          <div className="flex-1 overflow-y-auto border border-slate-100 dark:border-slate-800/80 rounded-2xl bg-white dark:bg-[#1E293B]/20 p-4 sm:p-6 mb-4 space-y-4 shadow-sm">
+            {messages.map((m) => {
+              const isUser = m.sender === "user";
+              return (
+                <div key={m.id} className={`flex items-start space-x-3.5 max-w-[85%] ${isUser ? "ml-auto flex-row-reverse space-x-reverse" : "mr-auto"}`}>
+                  {/* Badge avatar indicator */}
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 border ${
+                    isUser 
+                      ? "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300" 
+                      : "bg-[#2563EB]/10 border-blue-500/20 text-[#2563EB]"
+                  }`}>
+                    {isUser ? <User className="w-4 h-4" /> : <Brain className="w-4 h-4" />}
+                  </div>
 
-              {/* Chat Text Block */}
-              <div className={`px-4.5 py-3 rounded-2xl text-xs leading-relaxed ${
-                isUser 
-                  ? "bg-[#2563EB] text-white rounded-br-none" 
-                  : "bg-white dark:bg-[#1E293B] border border-slate-100 dark:border-slate-800 text-slate-800 dark:text-slate-250 rounded-bl-none shadow-sm"
-              }`}>
-                {m.text}
+                  {/* Chat Text Block */}
+                  <div className={`px-4.5 py-3 rounded-2xl text-xs leading-relaxed ${
+                    isUser 
+                      ? "bg-[#2563EB] text-white rounded-br-none" 
+                      : "bg-white dark:bg-[#1E293B] border border-slate-100 dark:border-slate-800 text-slate-800 dark:text-slate-250 rounded-bl-none shadow-sm"
+                  }`}>
+                    {m.text}
+                  </div>
+                </div>
+              );
+            })}
+            {sending && (
+              <div className="flex items-center space-x-2 text-xs text-slate-400 font-mono italic">
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#2563EB]" />
+                <span>{lang === "fr" ? "Le coach réfléchit..." : "Coach is designing response..."}</span>
+              </div>
+            )}
+            <div ref={scrollRef} />
+          </div>
+
+          {/* 3. Prebuilt Prompt Suggestions */}
+          {messages.length === 1 && (
+            <div className="mb-4 flex-shrink-0">
+              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase font-mono mb-2 block">
+                {lang === "fr" ? "Questions et points d'appui suggérés :" : "Suggested career dialogues :"}
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {[t.suggested1, t.suggested2, t.suggested3].map((sugg, sIdx) => (
+                  <button
+                    key={sIdx}
+                    onClick={() => handlePromptClick(sugg)}
+                    className="text-xs bg-[#F8FAFC] dark:bg-[#1E293B]/70 hover:bg-slate-100 dark:hover:bg-[#1E293B] border border-slate-100 dark:border-slate-800/80 rounded-full px-4 py-2 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors max-w-full text-left truncate"
+                  >
+                    {sugg}
+                  </button>
+                ))}
               </div>
             </div>
-          );
-        })}
-        {sending && (
-          <div className="flex items-center space-x-2 text-xs text-slate-400 font-mono italic">
-            <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#2563EB]" />
-            <span>{lang === "fr" ? "Le coach réfléchit..." : "Coach is designing response..."}</span>
-          </div>
-        )}
-        <div ref={scrollRef} />
-      </div>
+          )}
 
-      {/* 3. Prebuilt Prompt Suggestions */}
-      {messages.length === 1 && (
-        <div className="mb-4 flex-shrink-0">
-          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase font-mono mb-2 block">
-            {lang === "fr" ? "Questions et points d'appui suggérés :" : "Suggested career dialogues :"}
-          </span>
-          <div className="flex flex-wrap gap-2">
-            {[t.suggested1, t.suggested2, t.suggested3].map((sugg, sIdx) => (
-              <button
-                key={sIdx}
-                onClick={() => handlePromptClick(sugg)}
-                className="text-xs bg-[#F8FAFC] dark:bg-[#1E293B]/70 hover:bg-slate-100 dark:hover:bg-[#1E293B] border border-slate-100 dark:border-slate-800/80 rounded-full px-4 py-2 text-slate-700 dark:text-slate-300 cursor-pointer transition-colors max-w-full text-left truncate"
-              >
-                {sugg}
-              </button>
-            ))}
+          {/* 4. Message Input Action Bar */}
+          <div className="flex items-center space-x-2 flex-shrink-0">
+            <input
+              id="coach-chat-input"
+              type="text"
+              disabled={sending}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSendMessage(inputText);
+              }}
+              className="flex-1 px-4 py-3.5 text-sm rounded-xl border border-slate-100 dark:border-slate-800 bg-[#F8FAFC] dark:bg-[#1E293B]/40 text-slate-900 dark:text-white focus:outline-none focus:border-[#2563EB]"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              placeholder={t.chatPlaceholder}
+            />
+            <button
+              id="btn-coach-send"
+              onClick={() => handleSendMessage(inputText)}
+              disabled={sending || !inputText.trim()}
+              className="p-3.5 bg-[#2563EB] hover:bg-blue-700 disabled:bg-slate-200 dark:disabled:bg-slate-800/85 text-white rounded-xl shadow-md hover:shadow-lg shadow-blue-100 dark:shadow-none transition-all cursor-pointer disabled:cursor-not-allowed"
+              title="Send query"
+            >
+              <Send className="w-4.5 h-4.5" />
+            </button>
           </div>
-        </div>
+        </>
       )}
-
-      {/* 4. Message Input Action Bar */}
-      <div className="flex items-center space-x-2 flex-shrink-0">
-        <input
-          id="coach-chat-input"
-          type="text"
-          disabled={sending}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleSendMessage(inputText);
-          }}
-          className="flex-1 px-4 py-3.5 text-sm rounded-xl border border-slate-100 dark:border-slate-800 bg-[#F8FAFC] dark:bg-[#1E293B]/40 text-slate-900 dark:text-white focus:outline-none focus:border-[#2563EB]"
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          placeholder={t.chatPlaceholder}
-        />
-        <button
-          id="btn-coach-send"
-          onClick={() => handleSendMessage(inputText)}
-          disabled={sending || !inputText.trim()}
-          className="p-3.5 bg-[#2563EB] hover:bg-blue-700 disabled:bg-slate-200 dark:disabled:bg-slate-800/85 text-white rounded-xl shadow-md hover:shadow-lg shadow-blue-100 dark:shadow-none transition-all cursor-pointer disabled:cursor-not-allowed"
-          title="Send query"
-        >
-          <Send className="w-4.5 h-4.5" />
-        </button>
-      </div>
     </div>
   );
 }

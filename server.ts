@@ -3,6 +3,7 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
+import mammoth from "mammoth";
 
 dotenv.config();
 
@@ -429,6 +430,355 @@ app.post("/api/discover-future", async (req, res) => {
     res.json(data);
   } catch (error: any) {
     res.status(500).json({ error: error.message || "An error occurred predicting your career outlook" });
+  }
+});
+
+// 6. Unified Full-Profile Semantic Synchronizer
+app.post("/api/analyze-full-profile", async (req, res) => {
+  try {
+    const gemini = getGemini();
+    const { profile, rawCvText, fileData, lang = "fr" } = req.body;
+
+    let targetProfile = profile || {};
+    let fileText: string | null = null;
+    let pdfPart: any = null;
+
+    // A. Extract text or prepare base64 PDF parts depending on file upload format
+    if (fileData) {
+      const { base64, mimeType = "", filename = "" } = fileData;
+      const cleanBase64 = base64.includes(",") ? base64.split(",")[1] : base64;
+      const isDocx = mimeType.includes("word") || filename.toLowerCase().endsWith(".docx");
+      const isPdf = mimeType.includes("pdf") || filename.toLowerCase().endsWith(".pdf");
+
+      if (isDocx) {
+        try {
+          const buffer = Buffer.from(cleanBase64, "base64");
+          const result = await mammoth.extractRawText({ buffer });
+          fileText = result?.value || "";
+        } catch (docxErr: any) {
+          console.error("Docx parsing failed, falling back to string:", docxErr);
+          const buffer = Buffer.from(cleanBase64, "base64");
+          fileText = buffer.toString("utf8");
+        }
+      } else if (isPdf) {
+        pdfPart = {
+          inlineData: {
+            data: cleanBase64,
+            mimeType: "application/pdf"
+          }
+        };
+      } else {
+        // Plain text formats (txt, markdown, JSON, etc.)
+        try {
+          const buffer = Buffer.from(cleanBase64, "base64");
+          fileText = buffer.toString("utf8");
+        } catch {
+          fileText = rawCvText || "";
+        }
+      }
+    } else if (rawCvText) {
+      fileText = rawCvText;
+    } else {
+      // Direct form inputs validation
+      const skillList = Array.isArray(profile?.skills) ? profile.skills : [];
+      fileText = `
+        Profile input details:
+        Name: ${profile?.displayName || "Candidat"}
+        Skills: ${skillList.join(", ")}
+        Experience: ${profile?.experience || "Non spécifié"}
+        Education: ${profile?.education || "Non spécifié"}
+        Certifications: ${profile?.certifications || "Non spécifié"}
+        Projects: ${profile?.projects || "Non spécifié"}
+        Interests: ${profile?.interests || "Non spécifié"}
+      `;
+    }
+
+    // B. AI Validation and Extraction in a single Gemini call
+    const extractionPrompt = lang === "fr"
+      ? `Analysez de manière critique les informations fournies (dans le texte ou la pièce jointe) pour évaluer s'il s'agit d'un CV, d'un résumé de compétences, ou d'une description de parcours académique ou professionnel valide.
+
+         RÈGLES STRICTES DE VALIDATION IA :
+         1. Le contenu doit obligatoirement traiter de compétences professionnelles, d'expérience de travail, d'éducation, de certifications, de projets pratiques ou d'aspirations professionnelles cohérentes.
+         2. Si l'input n'a pas de sens (ex: texte vide, suite de lettres aléatoires, blague complète, recette de cuisine, poème, spam ou sujet n'ayant absolument aucun rapport avec le développement de carrière ou des compétences), vous DEVEZ obligatoirement définir "isValidProfile" à false.
+         3. Si "isValidProfile" est false, écrivez dans "validationFeedback" un message personnalisé, bienveillant mais explicite en français, expliquant que le document ou le texte ne cadre pas avec du développement de compétences/carrière, précisant l'erreur et indiquant les éléments requis à soumettre. Laissez l'objet "extractedProfile" vide.
+         4. Si le contenu est valide sur le plan professionnel ou académique (même s'il est court ou débutant), définissez "isValidProfile" à true, et extrayez de manière structurée les catégories en français.
+
+         Retournez TOUJOURS un objet JSON valide correspondant au schéma.`
+      : `Analyze the provided information (text or attached document) to evaluate whether it represents a valid career CV, skills list, academic background, or professional experience description.
+
+         STRICT IA VALIDATION RULES:
+         1. The content must relate to professional skills, work experience, education, qualifications, personal projects, or career aspirations.
+         2. If the text is absurd, empty, random keys (e.g., asdf), an outright joke, spam, lyrics, unrelated recipe, etc., you MUST set "isValidProfile" to false.
+         3. If "isValidProfile" is false, write to "validationFeedback" a helpful, constructive message in English, detailing the mismatch/errors, and instructing the user on what valid info to supply. Leave "extractedProfile" empty.
+         4. If valid, set "isValidProfile" to true and structurally extract coordinates in English.
+
+         Always return a valid JSON object matching the schema.`;
+
+    const contents: any[] = [];
+    if (pdfPart) {
+      contents.push(pdfPart);
+    }
+    
+    let textArg = "";
+    if (fileText) {
+      textArg += `DOCUMENT / TEXTE A EVALUER :\n${fileText}\n\n`;
+    }
+    textArg += extractionPrompt;
+    contents.push(textArg);
+
+    const extractionResponse = await gemini.models.generateContent({
+      model: "gemini-3.5-flash",
+      contents,
+      config: {
+        systemInstruction: lang === "fr" ? "Vous êtes un validateur de profils professionnels et extracteur structuré expert." : "You are an expert professional profile validator and structured resume extraction engine.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            isValidProfile: { type: Type.BOOLEAN },
+            validationFeedback: { type: Type.STRING },
+            extractedProfile: {
+              type: Type.OBJECT,
+              properties: {
+                displayName: { type: Type.STRING },
+                skills: { type: Type.ARRAY, items: { type: Type.STRING } },
+                experience: { type: Type.STRING },
+                education: { type: Type.STRING },
+                certifications: { type: Type.STRING },
+                projects: { type: Type.STRING },
+                interests: { type: Type.STRING }
+              },
+              required: ["skills", "experience", "education", "certifications", "projects", "interests"]
+            }
+          },
+          required: ["isValidProfile", "validationFeedback", "extractedProfile"]
+        }
+      }
+    });
+
+    const parsedExtraction = JSON.parse(extractionResponse.text || "{}");
+
+    // If the input is invalid, stop and notify the client about the error with advice
+    if (parsedExtraction.isValidProfile === false) {
+      return res.json({
+        isValidProfile: false,
+        validationFeedback: parsedExtraction.validationFeedback || (lang === "fr" ? "Le contenu fourni ne convient pas pour une analyse de profil professionnel." : "The provided content is not suitable for a professional profile evaluation.")
+      });
+    }
+
+    // Set target profile from the extraction
+    if (fileData || rawCvText) {
+      targetProfile = parsedExtraction.extractedProfile || {};
+      if (parsedExtraction.extractedProfile?.displayName) {
+        targetProfile.displayName = parsedExtraction.extractedProfile.displayName;
+      }
+    }
+
+    // Prepare inputs for parallelized calls
+    const displayName = targetProfile.displayName || profile?.displayName || "Candidat";
+    const skillList = Array.isArray(targetProfile.skills) ? targetProfile.skills : [];
+    const skillStrings = skillList.length > 0 ? skillList.join(", ") : "Non spécifié";
+    const certsString = targetProfile.certifications || "Non spécifié";
+    const expString = targetProfile.experience || "Non spécifié";
+    const eduString = targetProfile.education || "Non spécifié";
+    const githubString = targetProfile.github || "Non spécifié";
+    const projectsString = targetProfile.projects || "Non spécifié";
+    const interestsString = targetProfile.interests || "Non spécifié";
+
+    // C. Run dynamic evaluations in parallel using Promise.all
+    const runScoresPromise = async () => {
+      const prompt = lang === "fr"
+        ? `Calculez les scores de compétences (0-100) pour ces 5 dimensions : technique (technical), communication (communication), leadership (leadership), créativité (creativity), résolution de problèmes (problemSolving).
+           Générez également un résumé professionnel (summary, max 2-3 phrases), 3 points forts (strengths), 3 axes d'amélioration (weaknesses) et 3 opportunités (potential).
+           
+           Profil :
+           - Nom : ${displayName}
+           - Compétences : ${skillStrings}
+           - Expérience : ${expString}
+           - Éducation : ${eduString}
+           - Certifications : ${certsString}
+           - GitHub / Portfolio : ${githubString}
+           - Projets personnels : ${projectsString}
+           - Intérêts : ${interestsString}`
+        : `Compute competence scores (0-100) for: technical, communication, leadership, creativity, problemSolving.
+           Also generate a professional summary (summary, max 2-3 sentences), 3 key strengths (strengths), 3 improvement areas (weaknesses), and 3 opportunities (potential).
+           
+           Profile:
+           - Name: ${displayName}
+           - Skills: ${skillStrings}
+           - Experience: ${expString}
+           - Education: ${eduString}
+           - Certifications: ${certsString}
+           - GitHub: ${githubString}
+           - Projects: ${projectsString}
+           - Interests: ${interestsString}`;
+
+      const res = await gemini.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+        config: {
+          systemInstruction: lang === "fr" ? "Vous êtes un analyste de performances et de talents IA de premier plan." : "You are a top-tier performance and talent analyst.",
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              summary: { type: Type.STRING },
+              strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+              weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } },
+              potential: { type: Type.ARRAY, items: { type: Type.STRING } },
+              scores: {
+                type: Type.OBJECT,
+                properties: {
+                  technical: { type: Type.INTEGER },
+                  communication: { type: Type.INTEGER },
+                  leadership: { type: Type.INTEGER },
+                  creativity: { type: Type.INTEGER },
+                  problemSolving: { type: Type.INTEGER }
+                },
+                required: ["technical", "communication", "leadership", "creativity", "problemSolving"]
+              }
+            },
+            required: ["summary", "strengths", "weaknesses", "potential", "scores"]
+          }
+        }
+      });
+      return JSON.parse(res.text || "{}");
+    };
+
+    const runRoadmapPromise = async () => {
+      const prompt = lang === "fr"
+        ? `Générez un plan de carrière : carrières recommandées (au moins 2), parcours d'apprentissage chronologique (3 phases), certifications recommandées et projets pratiques.
+           
+           Profil :
+           - Compétences : ${skillStrings}
+           - Expérience : ${expString}
+           - Éducation : ${eduString}
+           - Objectif/Intérêts : ${interestsString}`
+        : `Generate a career roadmap: recommended careers (at least 2), a 3-phased chronological learning path, recommended qualifications, and practical projects.
+           
+           Profile:
+           - Skills: ${skillStrings}
+           - Experience: ${expString}
+           - Education: ${eduString}
+           - Interests: ${interestsString}`;
+
+      const res = await gemini.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+        config: {
+          systemInstruction: lang === "fr" ? "Conseiller d'orientation de carrière IA professionnel." : "Professional AI career path advisor.",
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              recommendedCareers: { type: Type.ARRAY, items: { type: Type.STRING } },
+              learningPath: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    phase: { type: Type.STRING },
+                    title: { type: Type.STRING },
+                    description: { type: Type.STRING },
+                    estimatedMonths: { type: Type.INTEGER },
+                    skillsToAcquire: { type: Type.ARRAY, items: { type: Type.STRING } }
+                  },
+                  required: ["phase", "title", "description", "estimatedMonths", "skillsToAcquire"]
+                }
+              },
+              certifications: { type: Type.ARRAY, items: { type: Type.STRING } },
+              projectsToBuild: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    title: { type: Type.STRING },
+                    description: { type: Type.STRING },
+                    difficulty: { type: Type.STRING }
+                  },
+                  required: ["title", "description", "difficulty"]
+                }
+              }
+            },
+            required: ["recommendedCareers", "learningPath", "certifications", "projectsToBuild"]
+          }
+        }
+      });
+      return JSON.parse(res.text || "{}");
+    };
+
+    const runFuturePromise = async () => {
+      const prompt = lang === "fr"
+        ? `Prédisez l'avenir professionnel : de nouvelles trajectoires de carrières futuristes / émergentes avec correspondance %, talents cachés, bilan long terme et étapes pour briller.
+           
+           Profil :
+           - Compétences brut : ${skillStrings}
+           - Expérience client : ${expString}
+           - Éducation : ${eduString}
+           - Projets récents : ${projectsString}`
+        : `Predict the future outlook: futuristic emerging careers with match %, hidden talents, visionary long-term outlook, and strategic steps.
+           
+           Profile:
+           - Skills: ${skillStrings}
+           - Experience: ${expString}
+           - Education: ${eduString}
+           - Recent projects: ${projectsString}`;
+
+      const res = await gemini.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+        config: {
+          systemInstruction: lang === "fr" ? "Prospectiviste technologique du travail expert." : "Expert tech workforce futurist.",
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              matches: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    career: { type: Type.STRING },
+                    percentage: { type: Type.INTEGER },
+                    why: { type: Type.STRING }
+                  },
+                  required: ["career", "percentage", "why"]
+                }
+              },
+              hiddenTalents: { type: Type.ARRAY, items: { type: Type.STRING } },
+              longTermOutlook: { type: Type.STRING },
+              stepsToExcel: { type: Type.ARRAY, items: { type: Type.STRING } }
+            },
+            required: ["matches", "hiddenTalents", "longTermOutlook", "stepsToExcel"]
+          }
+        }
+      });
+      return JSON.parse(res.text || "{}");
+    };
+
+    // Execute parallel evaluations!
+    const [scoresReport, roadmapReport, futureReport] = await Promise.all([
+      runScoresPromise(),
+      runRoadmapPromise(),
+      runFuturePromise()
+    ]);
+
+    res.json({
+      isValidProfile: true,
+      validationFeedback: parsedExtraction.validationFeedback || "",
+      extractedProfile: (fileData || rawCvText) ? targetProfile : null,
+      summary: scoresReport.summary,
+      strengths: scoresReport.strengths,
+      weaknesses: scoresReport.weaknesses,
+      potential: scoresReport.potential,
+      scores: scoresReport.scores,
+      roadmap: roadmapReport,
+      futurePrediction: futureReport
+    });
+
+  } catch (error: any) {
+    console.error("Error in analyze-full-profile:", error);
+    res.status(500).json({ error: error.message || "An error occurred during full profile calculations" });
   }
 });
 

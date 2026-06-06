@@ -241,6 +241,7 @@ export default function App() {
             lang={lang}
             userProfile={userProfile}
             setUserProfile={setUserProfile}
+            setCurrentTab={setCurrentTab}
           />
         ) : (
           <AuthScreen t={currentTranslations} lang={lang} theme={theme} onAuthSuccess={setUserProfile} />
@@ -248,7 +249,12 @@ export default function App() {
 
       case "coach":
         return userProfile ? (
-          <AICoach t={currentTranslations} lang={lang} userProfile={userProfile} />
+          <AICoach
+            t={currentTranslations}
+            lang={lang}
+            userProfile={userProfile}
+            setCurrentTab={setCurrentTab}
+          />
         ) : (
           <AuthScreen t={currentTranslations} lang={lang} theme={theme} onAuthSuccess={setUserProfile} />
         );
@@ -260,6 +266,7 @@ export default function App() {
             lang={lang}
             userProfile={userProfile}
             setUserProfile={setUserProfile}
+            setCurrentTab={setCurrentTab}
           />
         ) : (
           <AuthScreen t={currentTranslations} lang={lang} theme={theme} onAuthSuccess={setUserProfile} />
@@ -272,6 +279,7 @@ export default function App() {
             lang={lang}
             userProfile={userProfile}
             setUserProfile={setUserProfile}
+            setCurrentTab={setCurrentTab}
           />
         ) : (
           <AuthScreen t={currentTranslations} lang={lang} theme={theme} onAuthSuccess={setUserProfile} />

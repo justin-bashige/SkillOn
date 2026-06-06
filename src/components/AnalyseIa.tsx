@@ -52,44 +52,53 @@ export default function AnalyseIa({ t, lang, userProfile, setUserProfile, setCur
   };
 
   const processFile = (file: File) => {
-    setProgressMsg(lang === "fr" ? "Lecture du fichier d'expérience..." : "Reading experiences document...");
+    setProgressMsg(lang === "fr" ? "Préparation du document pour l'IA..." : "Preparing document for AI analysis...");
     const reader = new FileReader();
 
     reader.onload = async (event) => {
-      const fileContent = event.target?.result as string;
-      if (!fileContent || fileContent.trim().length === 0) {
-        setParseError(lang === "fr" ? "Le document est vide." : "The selected file is empty.");
+      const dataUrl = event.target?.result as string;
+      if (!dataUrl) {
+        setParseError(lang === "fr" ? "Le document sélectionné n'a pas pu être lu." : "The selected document could not be read.");
         return;
       }
-      runGeminiParser(fileContent);
+      const commaIndex = dataUrl.indexOf(",");
+      const base64 = dataUrl.substring(commaIndex + 1);
+      const mimeType = file.type || "application/pdf";
+
+      runGeminiParser(null, { base64, mimeType, filename: file.name });
     };
 
     reader.onerror = () => {
-      setParseError(lang === "fr" ? "Erreur lors de l'accès au fichier." : "Error occurred while reading the file.");
+      setParseError(lang === "fr" ? "Erreur lors de la lecture du fichier." : "Error occurred while reading the file.");
     };
 
-    reader.readAsText(file);
+    reader.readAsDataURL(file);
   };
 
-  const runGeminiParser = async (rawText: string) => {
+  const runGeminiParser = async (rawText: string | null, fileData?: { base64: string; mimeType: string; filename: string }) => {
     setParsing(true);
     setParseError("");
-    setProgressMsg(lang === "fr" ? "Analyse sémantique par Gemini 1.5 en cours..." : "Invoking Gemini Semantic Brain Analysis...");
+    setProgressMsg(lang === "fr" ? "Analyse sémantique intensive par Gemini..." : "Invoking Gemini Semantic Brain Analysis...");
 
     try {
-      const res = await fetch("/api/analyze-skills", {
+      const bodyPayload = fileData ? { fileData, lang } : { rawCvText: rawText, lang };
+      const res = await fetch("/api/analyze-full-profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rawCvText: rawText, lang }),
+        body: JSON.stringify(bodyPayload),
       });
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.error || "Failed to analyze layout profiles");
+        throw new Error(errData.error || "Failed to analyze profile input");
       }
 
       setProgressMsg(lang === "fr" ? "Consolidation du profil cognitif..." : "Saving cognitive talent coordinates...");
       const report = await res.json();
+
+      if (report.isValidProfile === false) {
+        throw new Error(report.validationFeedback || "The submitted file is not recognized as a career CV/portfolio profile.");
+      }
 
       const updatedProfile: Partial<UserProfile> = {
         skills: report.extractedProfile?.skills || [],
@@ -103,6 +112,8 @@ export default function AnalyseIa({ t, lang, userProfile, setUserProfile, setCur
         aiWeaknesses: report.weaknesses,
         aiPotential: report.potential,
         aiScores: report.scores,
+        aiRoadmap: report.roadmap,
+        aiFuturePrediction: report.futurePrediction,
       };
 
       const userRef = doc(db, "users", userProfile.userId);
@@ -295,21 +306,21 @@ export default function AnalyseIa({ t, lang, userProfile, setUserProfile, setCur
                     : "border-slate-200 dark:border-slate-700 hover:border-[#2563EB] hover:bg-slate-50/50 dark:hover:bg-slate-800/20"
                 }`}
               >
-                <input
+                 <input
                   type="file"
                   ref={fileInputRef}
                   onChange={handleFileChange}
-                  accept=".txt,.md,.json,.rtf"
+                  accept=".txt,.md,.json,.rtf,.pdf,.docx"
                   className="hidden"
                 />
                 <Upload className="w-12 h-12 text-[#2563EB] mx-auto mb-3 stroke-[1.5]" />
                 <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1 font-display">
-                  {lang === "fr" ? "Téléverser votre document d'expérience (.txt, .md, .json)" : "Upload CV File (.txt, .md, .json)"}
+                  {lang === "fr" ? "Téléverser votre CV ou profil (.pdf, .docx, .txt, .md)" : "Upload CV File (.pdf, .docx, .txt, .md)"}
                 </h3>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed max-w-sm mx-auto">
                   {lang === "fr"
-                    ? "Glissez votre document ou cliquez pour parcourir votre bureau. (Pour les fichiers PDF ou Word, copiez le contenu en texte libre ci-dessous)."
-                    : "Drop document file or search to browse. (For Word/PDF profiles copy and paste raw text labels down below)."}
+                    ? "Glissez votre document ou cliquez pour parcourir votre bureau. L'algorithme Gemini validera et synchronisera l'ensemble de votre profil."
+                    : "Drop your career file or click to browse. The Gemini model will validate and synchronize your complete dashboard instantly."}
                 </p>
               </div>
 

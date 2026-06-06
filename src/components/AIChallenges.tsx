@@ -9,14 +9,18 @@ interface AIChallengesProps {
   lang: "fr" | "en";
   userProfile: UserProfile;
   setUserProfile: React.Dispatch<React.SetStateAction<UserProfile | null>>;
+  setCurrentTab?: (tab: string) => void;
 }
 
-export default function AIChallenges({ t, lang, userProfile, setUserProfile }: AIChallengesProps) {
+export default function AIChallenges({ t, lang, userProfile, setUserProfile, setCurrentTab }: AIChallengesProps) {
   const [challenges, setChallenges] = useState<GrowthChallenge[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
+  const isProfileEmpty = !userProfile.skills || userProfile.skills.length === 0;
+
   const handleFetchChallenges = async () => {
+    if (isProfileEmpty) return;
     setLoading(true);
     setErrorMsg("");
 
@@ -87,7 +91,7 @@ export default function AIChallenges({ t, lang, userProfile, setUserProfile }: A
           <button
             id="btn-load-challenges"
             onClick={handleFetchChallenges}
-            disabled={loading}
+            disabled={loading || isProfileEmpty}
             className="inline-flex items-center px-5 py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white font-semibold text-sm rounded-lg shadow-md hover:shadow-lg shadow-blue-100 dark:shadow-none transition-all cursor-pointer disabled:opacity-50"
           >
             <Sparkles className="w-4.5 h-4.5 mr-1.5" />
@@ -103,7 +107,32 @@ export default function AIChallenges({ t, lang, userProfile, setUserProfile }: A
         </div>
       )}
 
-      {challenges.length === 0 ? (
+      {isProfileEmpty ? (
+        /* LOCKED PROFILE EMPTY REDIRECTION */
+         <div className="text-center py-20 px-8 bg-white dark:bg-[#1E293B] border border-slate-100 dark:border-slate-800/80 rounded-2xl shadow-sm max-w-2xl mx-auto space-y-6">
+          <div className="w-14 h-14 bg-amber-500/10 text-amber-500 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+            <Trophy className="w-7 h-7 stroke-[1.5]" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white font-display">
+              {lang === "fr" ? "Profil vide détecté dans la base" : "Profile Empty in Database"}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+              {lang === "fr"
+                ? "Pour éviter toute hallucination de l'IA, vous devez d'abord compléter vos informations (compétences, expériences, formations) sur votre profil."
+                : "To prevent AI hallucinations, you must first fill in your skills, experiences, and educational background on your profile page."}
+            </p>
+          </div>
+          <button
+            id="go-profile-challenges"
+            onClick={() => setCurrentTab?.("profile")}
+            className="px-6 py-3 bg-[#2563EB] hover:bg-blue-700 text-white font-bold text-sm rounded-lg shadow-md transition-colors cursor-pointer flex items-center justify-center space-x-2.5 mx-auto"
+          >
+            <CheckSquare className="w-4 h-4" />
+            <span>{lang === "fr" ? "Compléter mon Profil" : "Go to Profile"}</span>
+          </button>
+        </div>
+      ) : challenges.length === 0 ? (
         <div id="no-challenges-banner" className="text-center py-16 px-4 bg-white dark:bg-[#1E293B] border border-slate-100 dark:border-slate-800/80 rounded-2xl shadow-sm">
           <Trophy className="w-12 h-12 text-[#2563EB] mx-auto mb-4 stroke-[1.5]" />
           <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2 font-display">
