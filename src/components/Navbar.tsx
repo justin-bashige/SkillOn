@@ -1,5 +1,8 @@
-import React, { useState } from "react";
-import { Menu, X, Sun, Moon, Globe, Trophy, LogOut, Briefcase, Zap, User } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { 
+  Menu, X, Sun, Moon, Globe, LogOut, Briefcase, Zap, User, 
+  Home, Brain, Award, Compass, Users, Sparkles, Settings, ChevronDown 
+} from "lucide-react";
 import { Language, Theme } from "../lib/translations";
 import { UserProfile } from "../types";
 
@@ -27,6 +30,19 @@ export default function Navbar({
   t,
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setWorkspaceOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const toggleLanguage = () => {
     setLang(lang === "fr" ? "en" : "fr");
@@ -41,7 +57,41 @@ export default function Navbar({
   const handleTabClick = (tab: string) => {
     setCurrentTab(tab);
     setMobileMenuOpen(false);
+    setWorkspaceOpen(false);
   };
+
+  // Helper to compute overall competency percentage baseline or AI average
+  const getCompetencyPercentage = () => {
+    if (!userProfile) return 0;
+    if (userProfile.aiScores) {
+      const { technical, communication, leadership, creativity, problemSolving } = userProfile.aiScores;
+      return Math.round((technical + communication + leadership + creativity + problemSolving) / 5);
+    }
+    // Base estimation when not yet fully processed by Gemini
+    let base = 35;
+    if (userProfile.skills && userProfile.skills.length > 0) base += 5;
+    if (userProfile.experience) base += 10;
+    if (userProfile.certifications) base += 10;
+    if (userProfile.projects) base += 10;
+    return Math.min(base, 65); // Cap initial raw estimation before real evaluation
+  };
+
+  const progressPercentage = getCompetencyPercentage();
+
+  // Navigation menu items for the dropdown workspace selector
+  const workspaceItems = [
+    { key: "dashboard", label: lang === "fr" ? "Accueil" : "Home", icon: Home },
+    { key: "profile", label: lang === "fr" ? "Profil" : "Profile", icon: User },
+    { key: "analyse_ia", label: "Analyse IA", icon: Brain },
+    { key: "talent_score", label: "Talent Score", icon: Award },
+    { key: "challenges", label: lang === "fr" ? "Défis" : "Challenges", icon: Zap },
+    { key: "roadmap", label: "Roadmap", icon: Compass },
+    { key: "coach", label: "Coach IA", icon: Users },
+    { key: "future", label: lang === "fr" ? "Mon Avenir" : "Discover My Future", icon: Sparkles },
+    { key: "settings", label: lang === "fr" ? "Paramètres" : "Settings", icon: Settings }
+  ];
+
+  const currentTabLabel = workspaceItems.find(item => item.key === currentTab)?.label || t.dashboard;
 
   return (
     <nav className="border-b transition-colors duration-200 bg-white dark:bg-[#0F172A] border-slate-100 dark:border-slate-800/60 sticky top-0 z-50">
@@ -49,8 +99,7 @@ export default function Navbar({
         <div className="flex justify-between h-16">
           {/* Logo & Platform Name */}
           <div className="flex items-center space-x-3 cursor-pointer" onClick={() => handleTabClick("home")}>
-            {/* Minimalist Logo conforming exactly to prompt specifications */}
-            <div id="app-logo" className="w-10 h-10 rounded-xl bg-[#2563EB] flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-none">
+            <div id="app-logo" className="w-10 h-10 rounded-xl bg-[#2563EB] flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-none animate-pulse">
               <span className="text-white text-xl font-bold font-display tracking-tight">S</span>
             </div>
             <div className="flex flex-col">
@@ -60,105 +109,69 @@ export default function Navbar({
             </div>
           </div>
 
-          {/* Desktop Navigation Links */}
+          {/* Desktop WORKSPACE HUB DROPDOWN SELECTOR WITH HAMBURGER */}
           {userProfile && (
-            <div className="hidden lg:flex items-center space-x-1">
-              <button
-                id="tab-dashboard"
-                onClick={() => handleTabClick("dashboard")}
-                className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
-                  isActive("dashboard")
-                    ? "text-[#2563EB] bg-[#F8FAFC] dark:bg-slate-900 font-semibold"
-                    : "text-slate-600 dark:text-gray-300 hover:text-[#2563EB] hover:bg-[#F8FAFC]/50 dark:hover:bg-gray-800/50"
-                }`}
-              >
-                {t.dashboard}
-              </button>
-              <button
-                id="tab-profile"
-                onClick={() => handleTabClick("profile")}
-                className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
-                  isActive("profile")
-                    ? "text-[#2563EB] bg-[#F8FAFC] dark:bg-slate-900 font-semibold"
-                    : "text-slate-600 dark:text-gray-300 hover:text-[#2563EB] hover:bg-[#F8FAFC]/50 dark:hover:bg-gray-800/50"
-                }`}
-              >
-                {t.profile}
-              </button>
-              {userProfile.aiScores && (
-                <>
-                  <button
-                    id="tab-roadmap"
-                    onClick={() => handleTabClick("roadmap")}
-                    className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
-                      isActive("roadmap")
-                        ? "text-[#2563EB] bg-[#F8FAFC] dark:bg-slate-900 font-semibold"
-                        : "text-slate-600 dark:text-gray-300 hover:text-[#2563EB] hover:bg-[#F8FAFC]/50 dark:hover:bg-gray-800/50"
-                    }`}
-                  >
-                    {t.roadmap}
-                  </button>
-                  <button
-                    id="tab-coach"
-                    onClick={() => handleTabClick("coach")}
-                    className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
-                      isActive("coach")
-                        ? "text-[#2563EB] bg-[#F8FAFC] dark:bg-slate-900 font-semibold"
-                        : "text-slate-600 dark:text-gray-300 hover:text-[#2563EB] hover:bg-[#F8FAFC]/50 dark:hover:bg-gray-800/50"
-                    }`}
-                  >
-                    {t.coach}
-                  </button>
-                  <button
-                    id="tab-challenges"
-                    onClick={() => handleTabClick("challenges")}
-                    className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
-                      isActive("challenges")
-                        ? "text-[#2563EB] bg-[#F8FAFC] dark:bg-slate-900 font-semibold"
-                        : "text-slate-600 dark:text-gray-300 hover:text-[#2563EB] hover:bg-[#F8FAFC]/50 dark:hover:bg-gray-800/50"
-                    }`}
-                  >
-                    {t.challenges}
-                  </button>
-                  <button
-                    id="tab-future"
-                    onClick={() => handleTabClick("future")}
-                    className={`px-3.5 py-2 rounded-lg text-xs tracking-wide uppercase transition-all border border-blue-100 dark:border-blue-900/50 hover:border-blue-500 hover:bg-blue-500/10 ${
-                      isActive("future")
-                        ? "text-[#2563EB] bg-blue-50 dark:bg-blue-950/30 font-bold"
-                        : "text-slate-600 dark:text-gray-300"
-                    }`}
-                  >
-                    🔮 {t.future}
-                  </button>
-                </>
-              )}
-              <button
-                id="tab-settings"
-                onClick={() => handleTabClick("settings")}
-                className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
-                  isActive("settings")
-                    ? "text-[#2563EB] bg-[#F8FAFC] dark:bg-slate-900 font-semibold"
-                    : "text-slate-600 dark:text-gray-300 hover:text-[#2563EB] hover:bg-[#F8FAFC]/50 dark:hover:bg-gray-800/50"
-                }`}
-              >
-                {t.settings}
-              </button>
+            <div className="hidden lg:flex items-center" ref={dropdownRef}>
+              <div className="relative">
+                <button
+                  id="workspace-dropdown-trigger"
+                  type="button"
+                  onClick={() => setWorkspaceOpen(!workspaceOpen)}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-all cursor-pointer flex items-center space-x-2.5 border border-slate-100 dark:border-slate-800"
+                  aria-label="Toggle Workspace Dropdown"
+                >
+                  <Menu className="w-4 h-4 text-[#2563EB]" />
+                  <span className="text-slate-400">|</span>
+                  <span>{lang === "fr" ? "Espace de travail" : "Workspace Hub"} :</span>
+                  <span className="text-[#2563EB] font-bold">{currentTabLabel}</span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${workspaceOpen ? "rotate-180" : ""}`} />
+                </button>
+
+                {/* Dropdown menu items */}
+                {workspaceOpen && (
+                  <div className="absolute left-0 mt-2 w-64 rounded-2xl bg-white dark:bg-[#1E293B] border border-slate-100 dark:border-slate-800 shadow-xl py-2.5 z-55 animate-fade-in text-left">
+                    <span className="text-[9px] font-mono font-bold text-slate-400 block uppercase tracking-wider px-4 pb-2 border-b border-slate-50 dark:border-slate-800/85 mb-1.5">
+                      {lang === "fr" ? "Modules Disponibles" : "Workspace Areas"}
+                    </span>
+                    <div className="max-h-[75vh] overflow-y-auto space-y-0.5 px-1.5">
+                      {workspaceItems.map((item) => {
+                        const tabActive = isActive(item.key);
+                        const IconComponent = item.icon;
+
+                        return (
+                          <button
+                            key={item.key}
+                            onClick={() => handleTabClick(item.key)}
+                            className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-left transition-all cursor-pointer ${
+                              tabActive
+                                ? "bg-blue-50/70 dark:bg-blue-950/20 text-[#2563EB] font-bold"
+                                : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-white"
+                            }`}
+                          >
+                            <IconComponent className={`w-4 h-4 ${tabActive ? "text-[#2563EB]" : "text-slate-400 dark:text-slate-500"}`} />
+                            <span>{item.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Action Tools (Theme, Language, trophy, and sign-out) */}
+          {/* Action Tools (Theme, Language, and sign-out) */}
           <div className="flex items-center space-x-3">
-            {/* Display logged points with elegant trophy banner */}
+            {/* Display logged skill percentage rather than experience points */}
             {userProfile && (
               <div
                 id="user-score-badge"
-                className="hidden md:flex items-center px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60"
-                title={`${userProfile.points} Experience points`}
+                className="flex items-center px-3.5 py-1.5 rounded-full bg-blue-50/80 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/60"
+                title={lang === "fr" ? "Niveau de maîtrise algorithmique global" : "Global algorithmic mastery rate"}
               >
-                <Trophy className="w-4 h-4 text-amber-500 mr-1.5" />
-                <span className="text-xs font-mono font-bold text-amber-700 dark:text-amber-400">
-                  {userProfile.points} Pts
+                <Zap className="w-3.5 h-3.5 text-[#2563EB] mr-1.5 fill-current animate-bounce" />
+                <span className="text-xs font-mono font-bold text-blue-700 dark:text-blue-450">
+                  {progressPercentage}% {lang === "fr" ? "Maîtrise" : "Mastery"}
                 </span>
               </div>
             )}
@@ -236,66 +249,26 @@ export default function Navbar({
       {/* Mobile Menu Content Expand */}
       {mobileMenuOpen && userProfile && (
         <div className="lg:hidden border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-[#0F172A] px-2 pt-2 pb-3 space-y-1">
-          <button
-            onClick={() => handleTabClick("dashboard")}
-            className={`w-full text-left block px-3 py-2 rounded-md text-base font-medium ${
-              isActive("dashboard") ? "text-[#2563EB] bg-blue-50/50 dark:bg-blue-950/20" : "text-gray-700 dark:text-gray-300"
-            }`}
-          >
-            {t.dashboard}
-          </button>
-          <button
-            onClick={() => handleTabClick("profile")}
-            className={`w-full text-left block px-3 py-2 rounded-md text-base font-medium ${
-              isActive("profile") ? "text-[#2563EB] bg-blue-50/50 dark:bg-blue-950/20" : "text-gray-700 dark:text-gray-300"
-            }`}
-          >
-            {t.profile}
-          </button>
-          {userProfile.aiScores && (
-            <>
+          <span className="text-[10px] font-mono font-bold text-slate-400 block uppercase tracking-wider px-3 pt-1">
+            {lang === "fr" ? "Espace de travail" : "Workspace Hub"}
+          </span>
+          {workspaceItems.map((item) => {
+            const hasFocus = isActive(item.key);
+            const IconComponent = item.icon;
+            return (
               <button
-                onClick={() => handleTabClick("roadmap")}
-                className={`w-full text-left block px-3 py-2 rounded-md text-base font-medium ${
-                  isActive("roadmap") ? "text-[#2563EB] bg-blue-50/50 dark:bg-blue-950/20" : "text-gray-700 dark:text-gray-300"
+                key={item.key}
+                onClick={() => handleTabClick(item.key)}
+                className={`w-full text-left flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold ${
+                  hasFocus ? "text-[#2563EB] bg-blue-50/55 dark:bg-blue-950/30 font-bold" : "text-gray-750 dark:text-gray-350"
                 }`}
               >
-                {t.roadmap}
+                <IconComponent className="w-4 h-4 text-slate-400" />
+                <span>{item.label}</span>
               </button>
-              <button
-                onClick={() => handleTabClick("coach")}
-                className={`w-full text-left block px-3 py-2 rounded-md text-base font-medium ${
-                  isActive("coach") ? "text-[#2563EB] bg-blue-50/50 dark:bg-blue-950/20" : "text-gray-700 dark:text-gray-300"
-                }`}
-              >
-                {t.coach}
-              </button>
-              <button
-                onClick={() => handleTabClick("challenges")}
-                className={`w-full text-left block px-3 py-2 rounded-md text-base font-medium ${
-                  isActive("challenges") ? "text-[#2563EB] bg-blue-50/50 dark:bg-blue-950/20" : "text-gray-700 dark:text-gray-300"
-                }`}
-              >
-                {t.challenges}
-              </button>
-              <button
-                onClick={() => handleTabClick("future")}
-                className={`w-full text-left block px-3 py-2 rounded-md text-base font-medium border border-blue-500/20 text-blue-600 dark:text-blue-400 bg-blue-50/10 ${
-                  isActive("future") ? "bg-blend-darken text-semibold" : ""
-                }`}
-              >
-                ✨ {t.future}
-              </button>
-            </>
-          )}
-          <button
-            onClick={() => handleTabClick("settings")}
-            className={`w-full text-left block px-3 py-2 rounded-md text-base font-medium ${
-              isActive("settings") ? "text-[#2563EB] bg-blue-50/50 dark:bg-blue-950/20" : "text-gray-700 dark:text-gray-300"
-            }`}
-          >
-            {t.settings}
-          </button>
+            );
+          })}
+          
           <div className="border-t border-gray-100 dark:border-gray-800 pt-2 mt-2">
             <button
               onClick={onLogout}

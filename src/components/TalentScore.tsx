@@ -26,30 +26,30 @@ export default function TalentScore({ t, lang, userProfile, setCurrentTab }: Tal
     if (lang === "fr") {
       switch (dim) {
         case "technical":
-          return `Indice Technique (${val}/100) : Cet indice mesure votre niveau d'adaptation aux architectures logicielles modernes, aux bibliothèques de code complexes et à l'exactitude de votre exécution (comme React 18+, TypeScript et les configurations de serveurs).`;
+          return `Indice Technique (${val}%) : Cet indice mesure votre niveau d'adaptation aux architectures logicielles modernes, aux bibliothèques de code complexes et à l'exactitude de votre exécution (comme React 18+, TypeScript et les configurations de serveurs).`;
         case "communication":
-          return `Indice Communication (${val}/100) : Évalue votre capacité à synthétiser les concepts techniques complexes pour les clients, collaborer en binôme et partager des rapports sémantiques limpides de manière professionnelle.`;
+          return `Indice Communication (${val}%) : Évalue votre capacité à synthétiser les concepts techniques complexes pour les clients, collaborer en binôme et partager des rapports sémantiques limpides de manière professionnelle.`;
         case "leadership":
-          return `Indice Leadership (${val}/100) : Mesure votre aptitude à piloter des feuilles de route, mentorer de plus jeunes développeurs, arbitrer les priorités de sprint et porter la vision produit sans friction directionnelle.`;
+          return `Indice Leadership (${val}%) : Mesure votre aptitude à piloter des feuilles de route, mentorer de plus jeunes développeurs, arbitrer les priorités de sprint et porter la vision produit sans friction directionnelle.`;
         case "creativity":
-          return `Indice Créativité (${val}/100) : Traduit votre audace à concevoir des solutions innovantes, sortir des sentiers battus (out-of-the-box thinking) et formuler de nouvelles interfaces UX ergonomiques et stimulantes.`;
+          return `Indice Créativité (${val}%) : Traduit votre audace à concevoir des solutions innovantes, sortir des sentiers battus (out-of-the-box thinking) et formuler de nouvelles interfaces UX ergonomiques et stimulantes.`;
         case "problemSolving":
-          return `Indice Résolution Problèmes (${val}/100) : Représente votre persévérance et efficacité analytique face aux erreurs complexes du serveur, l'investigation de bugs bloquants et la rapidité de prise de décision logique.`;
+          return `Indice Résolution Problèmes (${val}%) : Représente votre persévérance et efficacité analytique face aux erreurs complexes du serveur, l'investigation de bugs bloquants et la rapidité de prise de décision logique.`;
         default:
           return "";
       }
     } else {
       switch (dim) {
         case "technical":
-          return `Technical Score (${val}/100): Reflects your absolute command of software engineering principles, framework architectures, structured syntax guidelines, and cloud operations.`;
+          return `Technical Score (${val}%): Reflects your absolute command of software engineering principles, framework architectures, structured syntax guidelines, and cloud operations.`;
         case "communication":
-          return `Communication Score (${val}/100): Evaluates your clarity in verbal/textual alignment, explaining complex design systems to customers, and writing clean documents.`;
+          return `Communication Score (${val}%): Evaluates your clarity in verbal/textual alignment, explaining complex design systems to customers, and writing clean documents.`;
         case "leadership":
-          return `Leadership Score (${val}/100): Evaluates master timeline scheduling, managing sprint priorities, mentoring teammates, and driving projects towards fast outcomes.`;
+          return `Leadership Score (${val}%): Evaluates master timeline scheduling, managing sprint priorities, mentoring teammates, and driving projects towards fast outcomes.`;
         case "creativity":
-          return `Creativity Score (${val}/100): Reflects your out-of-the-box thinking style, innovating new custom components, or adding unique UX visual depth.`;
+          return `Creativity Score (${val}%): Reflects your out-of-the-box thinking style, innovating new custom components, or adding unique UX visual depth.`;
         case "problemSolving":
-          return `Problem Solving (${val}/100): Measures speed in debugging nested service crashes, tracing performance bottlenecks, and compiling secure recovery scripts.`;
+          return `Problem Solving (${val}%): Measures speed in debugging nested service crashes, tracing performance bottlenecks, and compiling secure recovery scripts.`;
         default:
           return "";
       }
@@ -96,8 +96,8 @@ export default function TalentScore({ t, lang, userProfile, setCurrentTab }: Tal
     <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
       
       {/* Starting header */}
-      <div className="border-b border-slate-105 dark:border-slate-800 pb-6 mb-10">
-        <h2 className="text-3xl font-extrabold text-slate-909 dark:text-white tracking-tight font-display">
+      <div className="border-b border-slate-100 dark:border-slate-800 pb-6 mb-10">
+        <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight font-display">
           {lang === "fr" ? "Talent Score IA" : "AI Talent Score Dashboard"}
         </h2>
         <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400 font-sans">
@@ -142,7 +142,7 @@ export default function TalentScore({ t, lang, userProfile, setCurrentTab }: Tal
             {/* Round Gauge */}
             <div className="p-8 bg-white dark:bg-[#1E293B] border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm text-center flex flex-col items-center justify-center space-y-5">
               <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-widest block">
-                {lang === "fr" ? "MOYENNE CONSOLIDÉE" : "AVERAGE COGNITIVE STANDING"}
+                {lang === "fr" ? "MAÎTRISE CONSOLIDÉE" : "CONSOLIDATED MASTERY"}
               </span>
 
               {/* Dynamic Circular progress */}
@@ -171,17 +171,17 @@ export default function TalentScore({ t, lang, userProfile, setCurrentTab }: Tal
                 </svg>
                 <div className="absolute flex flex-col items-center">
                   <span className="text-4xl font-black text-slate-900 dark:text-white font-display">
-                    {averageScore}
+                    {averageScore}%
                   </span>
                   <span className="text-[10px] font-mono text-slate-400 uppercase font-black uppercase tracking-wider">
-                    POINTS
+                    {lang === "fr" ? "MAÎTRISE" : "MASTERY"}
                   </span>
                 </div>
               </div>
 
               {/* Rank description label */}
               <div className="space-y-1.5 pt-2">
-                <span className="text-xs font-bold text-slate-500 dark:text-slate-405 block">
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block">
                   {lang === "fr" ? "Grade d'Ingénierie IA :" : "AI Computed Status :"}
                 </span>
                 <span className="text-sm font-black font-sans text-[#2563EB] tracking-tight bg-blue-500/10 px-3.5 py-1.5 rounded-full uppercase">
@@ -196,7 +196,7 @@ export default function TalentScore({ t, lang, userProfile, setCurrentTab }: Tal
                 <Brain className="w-4 h-4" />
                 <span>{lang === "fr" ? "EXPLICATION DU SCORE" : "DIMENSION SCORE OUTLOOK"}</span>
               </h4>
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-sans font-medium transition-all duration-200">
+              <p className="text-xs text-slate-605 dark:text-slate-300 leading-relaxed font-sans font-medium transition-all duration-200">
                 {getDimensionDescription(activeDimension, scores[activeDimension as keyof typeof scores] || 50)}
               </p>
             </div>
@@ -323,8 +323,7 @@ export default function TalentScore({ t, lang, userProfile, setCurrentTab }: Tal
                       </div>
                     </div>
                     <div className="flex items-center space-x-1 font-mono text-xs font-black">
-                      <span className={isCurrent ? "text-[#2563EB]" : "text-slate-500"}>{val}</span>
-                      <span className="text-slate-400 text-[9px]">/100</span>
+                      <span className={isCurrent ? "text-[#2563EB]" : "text-slate-500"}>{val}%</span>
                     </div>
                   </button>
                 );

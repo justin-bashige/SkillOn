@@ -50,7 +50,8 @@ export default function AIChallenges({ t, lang, userProfile, setUserProfile }: A
       return; // Already completed
     }
 
-    const updatedPoints = (userProfile.points || 0) + challenge.points;
+    const percentageBoost = Math.round((challenge.points || 150) / 75);
+    const updatedPoints = Math.min((userProfile.points || 35) + percentageBoost, 100);
     const completedList = [...(userProfile.completedChallenges || []), challengeId];
 
     try {
@@ -187,11 +188,11 @@ export default function AIChallenges({ t, lang, userProfile, setUserProfile }: A
                   </div>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-slate-105 border-slate-100 dark:border-slate-800/80">
+                <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/80">
                   <div className="flex items-center justify-between space-x-2">
-                    <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 flex items-center font-mono">
-                      <Zap className="w-3.5 h-3.5 mr-1 text-amber-500" />
-                      +{c.points} Pts
+                    <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 flex items-center font-mono bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 rounded">
+                      <Zap className="w-3.5 h-3.5 mr-1 text-blue-500 animate-pulse" />
+                      +{Math.round((c.points || 150) / 75)}% {lang === "fr" ? "Maîtrise" : "Mastery"}
                     </span>
                     <button
                       id={`btn-complete-${c.id}`}
@@ -209,7 +210,11 @@ export default function AIChallenges({ t, lang, userProfile, setUserProfile }: A
                           <span>{t.completed}</span>
                         </>
                       ) : (
-                        <span>{t.claimPoints.replace("{points}", String(c.points))}</span>
+                        <span>
+                          {lang === "fr" 
+                            ? `Valider (+${Math.round((c.points || 150) / 75)}% de Maîtrise)` 
+                            : `Log Completed (+${Math.round((c.points || 150) / 75)}% Mastery)`}
+                        </span>
                       )}
                     </button>
                   </div>

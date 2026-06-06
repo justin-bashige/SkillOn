@@ -20,12 +20,28 @@ export default function Dashboard({ t, lang, userProfile, setUserProfile, setCur
     problemSolving: 0,
   };
 
+  // Helper to compute overall competency percentage baseline or AI average
+  const getCompetencyPercentage = () => {
+    if (userProfile.aiScores) {
+      const { technical, communication, leadership, creativity, problemSolving } = userProfile.aiScores;
+      return Math.round((technical + communication + leadership + creativity + problemSolving) / 5);
+    }
+    // Base completion metric
+    let base = 35;
+    if (userProfile.skills && userProfile.skills.length > 0) base += 5;
+    if (userProfile.experience) base += 10;
+    if (userProfile.certifications) base += 10;
+    if (userProfile.projects) base += 10;
+    return Math.min(base, 65);
+  };
+
+  const masteryPercentage = getCompetencyPercentage();
+
   // Grade helper based on overall points or average score level
   const getGradeName = () => {
-    const pointsValue = userProfile.points || 100;
-    if (pointsValue >= 500) return lang === "fr" ? "Expert Visionnaire II" : "Visionary Expert II";
-    if (pointsValue >= 300) return lang === "fr" ? "Technologue Senior I" : "Senior Technologist I";
-    if (pointsValue >= 150) return lang === "fr" ? "Professionnel Initiateur" : "Ascending Practitioner";
+    if (masteryPercentage >= 85) return lang === "fr" ? "Expert Visionnaire II" : "Visionary Expert II";
+    if (masteryPercentage >= 70) return lang === "fr" ? "Technologue Senior I" : "Senior Technologist I";
+    if (masteryPercentage >= 50) return lang === "fr" ? "Professionnel Initiateur" : "Ascending Practitioner";
     return lang === "fr" ? "Apprenti Novateur" : "Novice Explorer";
   };
 
@@ -51,61 +67,57 @@ export default function Dashboard({ t, lang, userProfile, setUserProfile, setCur
     return Math.max(items.length, 1); // Return at least 1 if string exists
   };
 
-  // Average Talent score mapping
-  const sumScores = scores.technical + scores.communication + scores.leadership + scores.creativity + scores.problemSolving;
-  const averageScore = hasScores ? Math.round(sumScores / 5) : 0;
-
   // Next steps preview list mapping
   const learningSteps = userProfile.aiRoadmap?.learningPath || [];
 
   return (
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-10 transition-colors duration-200">
       
-      {/* ================= BLOC 1: Welcome & Global point indicators ================= */}
+      {/* ================= BLOC 1: Welcome & Global percentage indicators ================= */}
       <div className="bg-white dark:bg-[#1E293B] border border-slate-100 dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-6 relative overflow-hidden">
         {/* Decorative corner element */}
         <div className="absolute top-0 right-0 w-44 h-44 bg-gradient-to-br from-blue-500/5 to-transparent rounded-bl-full pointer-events-none" />
         
         <div className="space-y-3 relative z-10">
           <div className="flex items-center space-x-2">
-            <span className="text-xs font-mono font-bold text-[#2563EB] uppercase tracking-widest bg-blue-50 dark:bg-blue-950/40 px-3 py-1 rounded-full">
+            <span className="text-xs font-mono font-bold text-[#2563EB] uppercase tracking-widest bg-blue-50/70 dark:bg-blue-950/45 px-3 py-1 rounded-full">
               {lang === "fr" ? "PROFIL ACTIF SÉCURISÉ" : "SECURED SESSION ACTIVE"}
             </span>
             <span className="text-xs font-mono text-slate-400">
-              GRADE: {getGradeName()}
+              {lang === "fr" ? "Statut" : "Status"}: {getGradeName()}
             </span>
           </div>
           
-          <h2 className="text-2xl sm:text-3xl font-black text-slate-909 dark:text-white tracking-tight font-display">
+          <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight font-display">
             {lang === "fr" 
               ? `Bienvenue, ${userProfile.displayName || "Candidat"} 👋` 
               : `Welcome back, ${userProfile.displayName || "Candidate"} 👋`}
           </h2>
           
-          <p className="text-sm text-slate-500 dark:text-slate-450 leading-relaxed max-w-xl font-sans font-medium">
+          <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-xl font-sans font-medium">
             {hasScores 
-              ? (lang === "fr" 
-                  ? "Votre Talent Score consolidé est synchronisé. Explorez votre roadmap et résolvez des défis pour propulser votre carrière."
-                  : "Explore your prospective career timelines and master weekly challenges to increase points standing.")
+              ? (lang === "fr"
+                  ? "Votre Talent Score consolidé est synchronisé. Explorez votre roadmap et résolvez des défis de croissance pour optimiser votre score d'expertise."
+                  : "Explore your prospective career timelines and master growth challenges to increase overall competency alignment.")
               : (lang === "fr"
-                  ? "Rejoignez l'élite technologique. Activez l'Analyse IA d'un fichier CV ci-dessous pour révéler votre Talent Score de départ."
-                  : "Uncover hidden strengths. Copy and paste your bio or upload a document to bootstrap scores.")}
+                  ? "Rejoignez l'élite technologique. Activez l'Analyse IA dans le module d'Analyse pour révéler et cartographier vos compétences clés."
+                  : "Uncover hidden strengths. Copy and paste your bio or upload a document inside IA Analysis to bootstrap scores.")}
           </p>
         </div>
 
-        {/* Right item points card indicator value */}
+        {/* Right item overall competency indicators (instead of trophy points) */}
         <div className="bg-[#F8FAFC] dark:bg-[#0F172A] border border-slate-100 dark:border-slate-800 p-5 rounded-xl flex items-center space-x-4 flex-shrink-0 relative z-10 shadow-sm md:w-64">
-          <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">
-            <Trophy className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-[#2563EB] animate-pulse">
+            <Zap className="w-6 h-6 fill-current" />
           </div>
           <div>
             <span className="text-[10px] font-mono font-bold text-slate-400 block uppercase tracking-wider">
-              {lang === "fr" ? "Points accumulés" : "Rank score balance"}
+              {lang === "fr" ? "Bilan de Maîtrise IA" : "AI Mastery Rating"}
             </span>
-            <span className="text-xl font-black font-display text-slate-900 dark:text-white block">
-              {userProfile.points || 100} PX
+            <span className="text-xl font-black font-display text-slate-700 dark:text-white block">
+              {masteryPercentage}%
             </span>
-            <span className="text-[11px] font-bold text-[#2563EB] font-serif block mt-0.5">
+            <span className="text-[11px] font-bold text-[#2563EB] font-sans block mt-0.5">
               👑 {getGradeName()}
             </span>
           </div>
@@ -115,17 +127,17 @@ export default function Dashboard({ t, lang, userProfile, setUserProfile, setCur
       {/* ================= BLOC 2: 4 Stats Cards metrics grid ================= */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
-        {/* Stat 1: Talent score index */}
-        <div className="p-6 bg-white dark:bg-[#1E293B] border border-slate-105 dark:border-slate-800 rounded-2xl shadow-sm flex items-center justify-between">
+        {/* Stat 1: Talent score index percentage */}
+        <div className="p-6 bg-white dark:bg-[#1E293B] border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest block">
               Talent Score
             </span>
-            <span className="text-2xl font-black font-display text-slate-808 dark:text-white block">
-              {hasScores ? `${averageScore}/100` : "--/100"}
+            <span className="text-2xl font-black font-display text-slate-800 dark:text-white block">
+              {hasScores ? `${masteryPercentage}%` : "35% (Base)"}
             </span>
-            <span className="text-[10px] font-sans text-slate-500 leading-none">
-              {hasScores ? (lang === "fr" ? "Consolidé par l'IA" : "Verified by Gemini") : (lang === "fr" ? "Analyse requise" : "Evaluation pending")}
+            <span className="text-[10px] font-sans text-slate-505 text-slate-500 leading-none">
+              {hasScores ? (lang === "fr" ? "Consolidé par l'IA" : "Verified by Gemini") : (lang === "fr" ? "Analyse en attente" : "Evaluation pending")}
             </span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-[#2563EB]">
@@ -133,31 +145,31 @@ export default function Dashboard({ t, lang, userProfile, setUserProfile, setCur
           </div>
         </div>
 
-        {/* Stat 2: Completed Growth challenges */}
-        <div className="p-6 bg-white dark:bg-[#1E293B] border border-slate-105 dark:border-slate-800 rounded-2xl shadow-sm flex items-center justify-between">
+        {/* Stat 2: Completed Growth challenges percentage impact */}
+        <div className="p-6 bg-white dark:bg-[#1E293B] border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest block">
-              {lang === "fr" ? "Défis Terminés" : "Completed Challenges"}
+              {lang === "fr" ? "Défis Complétés" : "Completed Tasks"}
             </span>
-            <span className="text-2xl font-black font-display text-slate-808 dark:text-white block">
-              {userProfile.completedChallenges?.length || 0} / 10
+            <span className="text-2xl font-black font-display text-slate-809 dark:text-white block">
+              {userProfile.completedChallenges?.length || 0} / 5
             </span>
             <span className="text-[10px] font-sans text-slate-500 leading-none">
-              {lang === "fr" ? "Pratiques techniques" : "Technical practices log"}
+              {lang === "fr" ? "Boosteur d'alignement" : "Mastery challenge boost"}
             </span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500">
-            <Zap className="w-5 h-5" />
+            <Zap className="w-5 h-5 animate-pulse" />
           </div>
         </div>
 
         {/* Stat 3: Total declared certifications */}
-        <div className="p-6 bg-white dark:bg-[#1E293B] border border-slate-105 dark:border-slate-800 rounded-2xl shadow-sm flex items-center justify-between">
+        <div className="p-6 bg-white dark:bg-[#1E293B] border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest block">
               Certificats
             </span>
-            <span className="text-2xl font-black font-display text-slate-808 dark:text-white block">
+            <span className="text-2xl font-black font-display text-slate-809 dark:text-white block">
               {getCertificatesCount()} {lang === "fr" ? "validé(s)" : "verified"}
             </span>
             <span className="text-[10px] font-sans text-slate-500 leading-none">
@@ -169,13 +181,13 @@ export default function Dashboard({ t, lang, userProfile, setUserProfile, setCur
           </div>
         </div>
 
-        {/* Stat 4: Profile overall completeness info */}
-        <div className="p-6 bg-white dark:bg-[#1E293B] border border-slate-105 dark:border-slate-800 rounded-2xl shadow-sm flex items-center justify-between">
+        {/* Stat 4: Profile overall completeness info percentage */}
+        <div className="p-6 bg-white dark:bg-[#1E293B] border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest block">
               Progression
             </span>
-            <span className="text-2xl font-black font-display text-slate-808 dark:text-white block">
+            <span className="text-2xl font-black font-display text-slate-809 dark:text-white block">
               {completionPercent}%
             </span>
             <span className="text-[10px] font-sans text-slate-500 leading-none">
@@ -211,7 +223,7 @@ export default function Dashboard({ t, lang, userProfile, setUserProfile, setCur
           {learningSteps.length === 0 ? (
             /* Blank state roadmap preview */
             <div className="text-center py-10 space-y-3.5">
-              <Compass className="w-10 h-10 text-slate-350 mx-auto" strokeWidth="1.5" />
+              <Compass className="w-10 h-10 text-slate-400 mx-auto" strokeWidth="1.5" />
               <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
                 {lang === "fr"
                   ? "Votre plan d'études chronologique n'est pas encore défini. Demandez l'apprentissage IA dans Parcours Professionnel !"
@@ -259,13 +271,13 @@ export default function Dashboard({ t, lang, userProfile, setUserProfile, setCur
               </h3>
             </div>
 
-            <p className="text-xs text-slate-655 dark:text-slate-300 leading-relaxed font-sans font-normal">
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-sans font-normal">
               {hasScores 
                 ? (lang === "fr"
-                    ? "D'après votre profil et vos scores compilés, vous devriez lancer les défis de croissance pour optimiser votre score d'influence et accumuler de la crédibilité."
-                    : "Based on calculated skills levels, we highly advice testing the Weekly Growth Challenge to bypass gaps and increase standing.")
+                    ? "D'après les compétences calculées dans votre évaluation, vous devriez lancer des défis de croissance personnalisés pour valider de hauts niveaux de maîtrise et adapter vos certifications."
+                    : "Based on calculated skills levels, we highly advice testing your Custom Growth Challenges to optimize your alignment index and acquire new badges.")
                 : (lang === "fr"
-                    ? "L'analyse IA de votre profil n'a pas encore été effectuée. Téléversez votre parcours dans Analyse IA pour recevoir des suggestions sur-mesure !"
+                    ? "L'analyse IA de votre profil n'a pas encore été effectuée. Renseignez l'intégralité de vos détails de profil puis lancez l'Analyse IA d'un clic pour recevoir des plans de cours !"
                     : "Analysis profile metrics pending. Boot up your workspace credentials report to obtain hourly strategic targets.")}
             </p>
           </div>
@@ -277,12 +289,12 @@ export default function Dashboard({ t, lang, userProfile, setUserProfile, setCur
                 if (hasScores) {
                   setCurrentTab("challenges");
                 } else {
-                  setCurrentTab("analyse_ia");
+                  setCurrentTab("profile");
                 }
               }}
               className="px-5 py-3 bg-[#2563EB] text-white hover:bg-blue-700 font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center space-x-2"
             >
-              <span>{hasScores ? (lang === "fr" ? "Rejoindre le défi" : "Take challenge") : (lang === "fr" ? "Lancer Analyse IA" : "Execute AI Review")}</span>
+              <span>{hasScores ? (lang === "fr" ? "Lancer un Défi" : "Take challenge") : (lang === "fr" ? "Se qualifier via l'IA" : "Get AI Qualified")}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>

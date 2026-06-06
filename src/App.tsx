@@ -335,69 +335,16 @@ export default function App() {
         t={currentTranslations}
       />
       
-      {/* Render layout either with Sidebar or simple centered pane */}
+      {/* Render layout with simple wide content pane, centered */}
       {showSidebar ? (
-        <div className="flex-1 flex flex-col lg:flex-row max-w-7xl w-full mx-auto md:px-4 lg:px-8">
-          
-          {/* LEFT PERSISTENT NAVIGATION SIDEBAR */}
-          <aside className="w-full lg:w-64 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-slate-100 dark:border-slate-800/60 p-6 lg:p-8 lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] flex flex-col justify-between overflow-y-auto">
-            <div className="space-y-6">
-              <span className="text-[10px] font-mono font-black text-slate-400 block uppercase tracking-widest px-3">
-                {lang === "fr" ? "Espace de Travail" : "Workspace Hub"}
-              </span>
-              
-              <nav className="space-y-1">
-                {sidebarItems.map((item) => {
-                  const isActive = currentTab === item.key;
-                  const IconComp = item.icon;
-
-                  return (
-                    <button
-                      key={item.key}
-                      id={`sidebar-tab-${item.key}`}
-                      onClick={() => setCurrentTab(item.key)}
-                      className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
-                        isActive
-                          ? "bg-blue-50/70 dark:bg-blue-950/20 text-[#2563EB] font-bold"
-                          : "text-slate-600 dark:text-slate-405 hover:bg-slate-50 dark:hover:bg-slate-900/40 hover:text-slate-902 dark:hover:text-white"
-                      }`}
-                    >
-                      <IconComp className={`w-4.5 h-4.5 ${isActive ? "text-[#2563EB]" : "text-slate-400 dark:text-slate-500"}`} />
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
-
-            {/* Micro User stats or bio inside Sidebar */}
-            {userProfile && (
-              <div className="hidden lg:block pt-6 border-t border-slate-100 dark:border-slate-800/60 space-y-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#2563EB] text-white flex items-center justify-center font-black text-lg shadow-sm">
-                    {userProfile.displayName ? userProfile.displayName[0].toUpperCase() : "U"}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="text-xs font-black text-slate-900 dark:text-white truncate block">
-                      {userProfile.displayName || "Candidat"}
-                    </span>
-                    <span className="text-[10px] text-slate-400 truncate block font-mono">
-                      {userProfile.email}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </aside>
-
-          {/* MAIN CONTENT PANE */}
-          <main className="flex-grow flex flex-col justify-start min-w-0 overflow-x-hidden md:py-4">
+        <div className="flex-1 flex flex-col max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+          {/* Main content pane */}
+          <main className="flex-grow flex flex-col justify-start min-w-0 overflow-x-hidden">
             {renderContent()}
           </main>
-
         </div>
       ) : (
-        /* STANDARD SIMPLE CENTERED WRAPPER for Landing and Auth Screens */
+        /* Standard simple centered wrapper for Landing (with full control bounds) and Auth Screens */
         <main className="flex-grow flex flex-col justify-start">
           {renderContent()}
         </main>

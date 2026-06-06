@@ -16,7 +16,7 @@ export const translations = {
     future: "Découvrir Mon Avenir",
     settings: "Options",
     loading: "Chargement...",
-    points: "Points",
+    points: "Maîtrise",
     cancel: "Annuler",
     save: "Enregistrer",
     
@@ -139,9 +139,9 @@ export const translations = {
     challengesSubtitle: "Améliorez vos compétences en affrontant des défis pratiques orientés développement de carrière.",
     challengeDifficulty: "Difficulté",
     challengeDuration: "Durée estimée",
-    challengePoints: "Points à gagner",
-    claimPoints: "Valider le Défi (+{points} Points)",
-    completedSuccess: "Défi validé ! Félicitations !",
+    challengePoints: "Gain de Maîtrise",
+    claimPoints: "Valider le Défi (+{points}% de Maîtrise)",
+    completedSuccess: "Défi validé ! Votre niveau de maîtrise a augmenté !",
     alreadyCompleted: "Défi déjà validé",
     loadChallengesBtn: "Générer mes Défis IA",
 
@@ -182,7 +182,7 @@ export const translations = {
     future: "Discover My Future",
     settings: "Settings",
     loading: "Loading...",
-    points: "Points",
+    points: "Mastery",
     cancel: "Cancel",
     save: "Save",
 
@@ -305,9 +305,9 @@ export const translations = {
     challengesSubtitle: "Undertake tailored milestones to earn rank points and build operational competence.",
     challengeDifficulty: "Difficulty",
     challengeDuration: "Duration",
-    challengePoints: "Points",
-    claimPoints: "Mark Completed (+{points} Points)",
-    completedSuccess: "Challenge logged successfully! Points added.",
+    challengePoints: "Mastery Gain",
+    claimPoints: "Mark Completed (+{points}% Mastery Boost)",
+    completedSuccess: "Challenge logged successfully! Mastery levels increased.",
     alreadyCompleted: "Challenge already completed",
     loadChallengesBtn: "Generate My IA Challenges",
 
