@@ -1,0 +1,6 @@
+{
+  "name": "SkillOn",
+  "description": "AI-powered talent discovery, skill assessment and career development platform that helps users identify strengths, evaluate competencies and accelerate professional growth.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

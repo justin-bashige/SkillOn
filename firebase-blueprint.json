@@ -1,0 +1,56 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Stores professional profile details, user preferences, and AI scores.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "email": { "type": "string" },
+        "skills": { "type": "array" },
+        "certifications": { "type": "string" },
+        "experience": { "type": "string" },
+        "education": { "type": "string" },
+        "github": { "type": "string" },
+        "projects": { "type": "string" },
+        "interests": { "type": "string" },
+        "points": { "type": "integer" },
+        "completedChallenges": { "type": "array" },
+        "langPreference": { "type": "string" },
+        "themePreference": { "type": "string" },
+        "aiScores": { "type": "object" },
+        "aiSummary": { "type": "string" },
+        "aiStrengths": { "type": "array" },
+        "aiWeaknesses": { "type": "array" },
+        "aiPotential": { "type": "array" },
+        "aiRoadmap": { "type": "object" },
+        "aiFuturePrediction": { "type": "object" }
+      },
+      "required": ["userId", "email"]
+    },
+    "ChatHistoryItem": {
+      "title": "ChatHistoryItem",
+      "description": "Stores user interactive messages with AI Coach.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sender": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "integer" }
+      },
+      "required": ["id", "sender", "text", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile, assessment and career parameters."
+    },
+    "/users/{userId}/chatHistory/{messageId}": {
+      "schema": "ChatHistoryItem",
+      "description": "Conversation with the AI career coach."
+    }
+  }
+}
